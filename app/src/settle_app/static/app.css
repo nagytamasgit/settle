@@ -1,0 +1,206 @@
+/* One stylesheet, no framework, no build step. The Content-Security-Policy
+   forbids scripts entirely, so everything here has to work without them. */
+
+:root {
+  --bg: #fbfbfa;
+  --surface: #ffffff;
+  --ink: #16181d;
+  --muted: #5f6672;
+  --line: #e2e4e9;
+  --accent: #1f5f4f;
+  --accent-ink: #ffffff;
+  --warn-bg: #fdf6e3;
+  --warn-ink: #7a5a12;
+  --error-bg: #fdeceb;
+  --error-ink: #96231c;
+  --radius: 7px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14161a;
+    --surface: #1c1f25;
+    --ink: #e8eaed;
+    --muted: #9aa2af;
+    --line: #2b2f37;
+    --accent: #5fc3a4;
+    --accent-ink: #10231d;
+    --warn-bg: #2e2716;
+    --warn-ink: #e6c878;
+    --error-bg: #34201e;
+    --error-ink: #f0a49c;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+        "Helvetica Neue", Arial, sans-serif;
+}
+
+main { max-width: 1040px; margin: 0 auto; padding: 28px 20px 64px; }
+.narrow { max-width: 380px; margin: 9vh auto 0; padding: 0 20px; }
+
+/* Header ----------------------------------------------------------------- */
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+.wordmark {
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+nav { display: flex; align-items: center; gap: 18px; }
+nav a { color: var(--muted); text-decoration: none; }
+nav a:hover { color: var(--ink); }
+.inline { display: inline; margin: 0; }
+
+/* Type ------------------------------------------------------------------- */
+
+h1 { font-size: 22px; font-weight: 640; letter-spacing: -0.02em; margin: 0 0 4px; }
+h2 { font-size: 16px; font-weight: 620; margin: 28px 0 8px; }
+.lede { color: var(--muted); margin: 0 0 22px; }
+.muted { color: var(--muted); }
+.fineprint { color: var(--muted); font-size: 13px; margin-top: 22px; }
+a { color: var(--accent); }
+
+/* Forms ------------------------------------------------------------------ */
+
+label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 5px; }
+
+input[type="password"],
+input[type="text"],
+input[type="file"],
+select {
+  width: 100%;
+  padding: 9px 11px;
+  margin-bottom: 14px;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font: inherit;
+}
+
+input:focus-visible, select:focus-visible, button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+button, .button {
+  display: inline-block;
+  padding: 9px 16px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  font: inherit;
+  font-weight: 560;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+button:hover, .button:hover { filter: brightness(1.07); }
+
+.linklike {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--muted);
+  font-weight: 400;
+  cursor: pointer;
+}
+.linklike:hover { color: var(--ink); }
+
+/* Notices ---------------------------------------------------------------- */
+
+.notice {
+  padding: 10px 13px;
+  margin: 0 0 18px;
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+  border-radius: var(--radius);
+}
+.notice.error { background: var(--error-bg); color: var(--error-ink); }
+
+.empty {
+  padding: 44px 20px;
+  text-align: center;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+/* Tables ----------------------------------------------------------------- */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+th, td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+
+th {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+tbody tr:last-child td { border-bottom: none; }
+
+/* Money and counts line up on the decimal point far better right-aligned,
+   and tabular figures stop the columns dancing between rows. */
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.pill {
+  display: inline-block;
+  padding: 1px 8px;
+  font-size: 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+.pill.complete { color: var(--accent); border-color: currentColor; }
+.pill.failed { color: var(--error-ink); border-color: currentColor; }
+
+/* Footer ----------------------------------------------------------------- */
+
+footer {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 0 20px 40px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.warn { color: var(--warn-ink); }

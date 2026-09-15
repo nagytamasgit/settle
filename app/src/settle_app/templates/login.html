@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Sign in &middot; settle{% endblock %}
+
+{% block nav %}{% endblock %}
+
+{% block content %}
+<div class="narrow">
+  <h1>settle</h1>
+  <p class="lede">
+    Matches incoming payments to invoices, and tells you when it isn&rsquo;t sure.
+  </p>
+
+  <form method="post" action="/login">
+    <label for="password">Password</label>
+    <input type="password" id="password" name="password" autocomplete="current-password"
+           autofocus required>
+    <button type="submit">Sign in</button>
+  </form>
+
+  <p class="fineprint">
+    One password covers this whole instance. Anyone who has it can read and
+    delete every run.
+  </p>
+</div>
+{% endblock %}

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>{% block title %}settle{% endblock %}</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <header class="bar">
+    <a class="wordmark" href="/runs">settle</a>
+    {% block nav %}
+    <nav>
+      <a href="/runs">Runs</a>
+      <a href="/runs/new">New run</a>
+      {% if auth_required %}
+      <form method="post" action="/logout" class="inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button type="submit" class="linklike">Log out</button>
+      </form>
+      {% endif %}
+    </nav>
+    {% endblock %}
+  </header>
+
+  <main>
+    {% if error %}<p class="notice error">{{ error }}</p>{% endif %}
+    {% if message %}<p class="notice">{{ message }}</p>{% endif %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer>
+    <span>engine {{ engine_version }} &middot; app {{ app_version }}</span>
+    {% if not auth_required %}
+    <span class="warn">No password set &mdash; this instance is unprotected and must stay on localhost.</span>
+    {% endif %}
+  </footer>
+</body>
+</html>

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Runs &middot; settle{% endblock %}
+
+{% block content %}
+<h1>Runs</h1>
+
+{% if not runs %}
+<div class="empty">
+  <p>Nothing here yet.</p>
+  <p><a class="button" href="/runs/new">Reconcile a statement</a></p>
+</div>
+{% else %}
+<p class="muted">{{ total }} run{{ '' if total == 1 else 's' }}.</p>
+<table>
+  <thead>
+    <tr>
+      <th>When</th>
+      <th>Label</th>
+      <th>Status</th>
+      <th class="num">Payments</th>
+      <th class="num">Money in</th>
+      <th class="num">Review</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for run in runs %}
+    <tr>
+      <td><a href="/runs/{{ run.id }}">{{ run.created_at[:16].replace('T', ' ') }}</a></td>
+      <td>{{ run.label }}</td>
+      <td><span class="pill {{ run.status }}">{{ run.status }}</span></td>
+      <td class="num">{{ run.payment_count }}</td>
+      <td class="num">{{ run.money_in }}</td>
+      <td class="num">{{ run.review_count or '' }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}
