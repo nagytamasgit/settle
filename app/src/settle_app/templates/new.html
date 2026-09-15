@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}New run &middot; settle{% endblock %}
+
+{% block content %}
+<h1>Reconcile a statement</h1>
+<p class="lede">
+  Two files: your open invoices, and the bank lines that paid them.
+</p>
+
+<form method="post" action="/runs" enctype="multipart/form-data">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+  <label for="invoices">Invoice ledger (CSV)</label>
+  <input type="file" id="invoices" name="invoices" accept=".csv,text/csv">
+
+  <label for="payments">Bank statement (CSV)</label>
+  <input type="file" id="payments" name="payments" accept=".csv,text/csv">
+
+  <label for="label">Label (optional)</label>
+  <input type="text" id="label" name="label" placeholder="March 2026" maxlength="80">
+
+  <button type="submit">Reconcile</button>
+</form>
+
+<h2>Columns it expects</h2>
+<p class="muted">
+  Invoices: <code>id, customer_id, customer_name, number, issue_date, due_date,
+  amount, currency</code>.<br>
+  Bank lines: <code>id, date, amount, currency, reference, counterparty,
+  customer_id</code>.
+</p>
+<p class="muted">
+  Up to {{ max_mb }} MB and {{ "{:,}".format(max_rows) }} rows per file. For a
+  ledger larger than that, use <code>settle run</code> on the command line.
+</p>
+
+<h2>Just looking?</h2>
+<form method="post" action="/runs">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <input type="hidden" name="use_sample" value="1">
+  <p class="muted">
+    A generated ledger of 40 invoices and 41 bank lines, deliberately messy:
+    merged payments, part payments, bank fees and unreadable references.
+  </p>
+  <button type="submit">Try the sample</button>
+</form>
+{% endblock %}

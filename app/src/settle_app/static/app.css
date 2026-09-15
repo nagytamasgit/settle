@@ -191,6 +191,50 @@ tbody tr:last-child td { border-bottom: none; }
 .pill.complete { color: var(--accent); border-color: currentColor; }
 .pill.failed { color: var(--error-ink); border-color: currentColor; }
 
+/* Summary cards ---------------------------------------------------------- */
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+  margin: 20px 0 8px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.card.attention { border-color: var(--warn-ink); }
+
+.figure {
+  font-size: 25px;
+  font-weight: 620;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.caption { font-size: 13px; color: var(--muted); }
+.detail { font-size: 12px; color: var(--muted); margin-top: 5px; }
+
+.downloads { display: flex; flex-wrap: wrap; gap: 14px; }
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.92em;
+}
+
+button.danger {
+  background: transparent;
+  color: var(--error-ink);
+  border-color: currentColor;
+}
+
 /* Footer ----------------------------------------------------------------- */
 
 footer {

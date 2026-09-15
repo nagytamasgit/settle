@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}Run &middot; settle{% endblock %}
+
+{% block content %}
+<h1>{{ run.label or "Run" }}</h1>
+<p class="lede">{{ run.created_at[:16].replace('T', ' ') }} &middot; engine {{ run.engine_version }}</p>
+
+{% if run.status == 'failed' %}
+<p class="notice error">{{ run.error }}</p>
+{% endif %}
+
+{% if report %}
+<div class="cards">
+  <div class="card">
+    <span class="figure">{{ report.payments.total }}</span>
+    <span class="caption">payments</span>
+    <span class="detail">
+      {{ report.payments.matched }} matched &middot;
+      {{ report.payments.partially_matched }} part &middot;
+      {{ report.payments.unmatched }} unmatched
+    </span>
+  </div>
+  <div class="card">
+    <span class="figure">{{ report.money.allocated }}</span>
+    <span class="caption">allocated of {{ report.money["in"] }}</span>
+    <span class="detail">{{ report.money.residual }} unallocated</span>
+  </div>
+  <div class="card {% if report.payments.in_review %}attention{% endif %}">
+    <span class="figure">{{ report.payments.in_review }}</span>
+    <span class="caption">need a human</span>
+    <span class="detail">
+      {% if report.payments.in_review %}the engine would not guess{% else %}nothing ambiguous{% endif %}
+    </span>
+  </div>
+  <div class="card">
+    <span class="figure">{{ report.invoices.paid }}</span>
+    <span class="caption">invoices paid</span>
+    <span class="detail">
+      {{ report.invoices.settled_with_fee }} settled with fee ({{ report.money.fees }}) &middot;
+      {{ report.invoices.open }} open
+    </span>
+  </div>
+</div>
+{% endif %}
+
+{% if views and views.warnings %}
+{% for warning in views.warnings %}
+<p class="notice">{{ warning }}</p>
+{% endfor %}
+{% endif %}
+
+{% if files %}
+<h2>Download</h2>
+<p class="downloads">
+  {% for name, human in files %}
+  <a href="/runs/{{ run.id }}/files/{{ name }}">{{ human }}</a>
+  {% endfor %}
+</p>
+<p class="muted fineprint">
+  These are the files the engine wrote, byte for byte &mdash; the same ones
+  <code>settle run</code> produces. Everything below is a view of them.
+</p>
+{% endif %}
+
+{% if views %}
+
+{% if views.review_queue.total %}
+<h2>Needs a human ({{ views.review_queue.total }})</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Payment</th><th>Date</th><th class="num">Amount</th>
+      <th>Reference</th><th>Why</th><th class="num">Options</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in views.review_queue.rows %}
+    <tr>
+      <td>{{ row.payment_id }}</td>
+      <td>{{ row.payment_date }}</td>
+      <td class="num">{{ row.amount }}</td>
+      <td>{{ row.reference }}</td>
+      <td>{{ row.message }}</td>
+      <td class="num">{{ row.options }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% if views.review_queue.truncated %}
+<p class="muted fineprint">Showing {{ views.review_queue.rows|length }} of
+  {{ views.review_queue.total }}. The CSV has all of them.</p>
+{% endif %}
+{% endif %}
+
+<h2>Allocations ({{ views.allocations.total }})</h2>
+{% if not views.allocations.total %}
+<p class="muted">Nothing was allocated.</p>
+{% else %}
+<table>
+  <thead>
+    <tr>
+      <th>Payment</th><th>Invoice</th><th>Customer</th>
+      <th class="num">Amount</th><th class="num">Fee</th>
+      <th class="num">Confidence</th><th>Why</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in views.allocations.rows %}
+    <tr>
+      <td>{{ row.payment_id }}</td>
+      <td>{{ row.invoice_number or row.invoice_id }}</td>
+      <td>{{ row.customer_name }}</td>
+      <td class="num">{{ row.amount }}</td>
+      <td class="num">{{ row.fee }}</td>
+      <td class="num">{{ row.confidence }}</td>
+      <td>{{ row.reason }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% if views.allocations.truncated %}
+<p class="muted fineprint">Showing {{ views.allocations.rows|length }} of
+  {{ views.allocations.total }}. The CSV has all of them.</p>
+{% endif %}
+{% endif %}
+
+<h2>Invoices after the run ({{ views.invoice_states.total }})</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Invoice</th><th>Customer</th><th>Status</th>
+      <th class="num">Face value</th><th class="num">Allocated</th>
+      <th class="num">Fee</th><th class="num">Still open</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in views.invoice_states.rows %}
+    <tr>
+      <td>{{ row.number or row.invoice_id }}</td>
+      <td>{{ row.customer_name }}</td>
+      <td><span class="pill">{{ row.status.replace('_', ' ') }}</span></td>
+      <td class="num">{{ row.face_value }}</td>
+      <td class="num">{{ row.allocated }}</td>
+      <td class="num">{{ row.fee_written_off }}</td>
+      <td class="num">{{ row.open_balance }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% if views.invoice_states.truncated %}
+<p class="muted fineprint">Showing {{ views.invoice_states.rows|length }} of
+  {{ views.invoice_states.total }}. The CSV has all of them.</p>
+{% endif %}
+
+{% endif %}
+
+<h2>Delete</h2>
+<form method="post" action="/runs/{{ run.id }}/delete">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <p class="muted">Removes the database row and every file. It does not come back.</p>
+  <button type="submit" class="danger">Delete this run</button>
+</form>
+{% endblock %}

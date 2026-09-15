@@ -136,6 +136,12 @@ def create_app(settings: WebSettings | None = None) -> FastAPI:
     _register_health(app)
     _register_auth(app, web)
     _register_runs(app, web)
+
+    # Imported here rather than at module scope: runs_routes needs Web, which
+    # is defined above, and a module-level import would be a cycle.
+    from settle_app import runs_routes
+
+    runs_routes.register(app, web)
     return app
 
 
