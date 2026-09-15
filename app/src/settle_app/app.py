@@ -23,8 +23,10 @@ from fastapi.templating import Jinja2Templates
 from settle.domain.match import ENGINE_VERSION
 from settle_app import APP_VERSION
 from settle_app.context import AppContext
+from settle_app.maintenance import sweep
 from settle_app.security import csrf_token, issue_session, verify_password, verify_session
 from settle_app.settings import WebSettings
+from settle_app.store import SORTABLE, STATUSES
 
 PACKAGE_DIR: Final = Path(__file__).parent
 TEMPLATES_DIR: Final = PACKAGE_DIR / "templates"
@@ -132,6 +134,11 @@ def create_app(settings: WebSettings | None = None) -> FastAPI:
     app.state.ctx = context
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
+    # Expired runs and abandoned uploads go at startup. A deployment that is
+    # restarted for an update should not need a cron job to stop holding data
+    # it was told to forget.
+    sweep(store=context.store, artifacts=context.artifacts, settings=context.settings)
+
     _register_middleware(app, web)
     _register_health(app)
     _register_auth(app, web)
@@ -207,15 +214,42 @@ def _register_auth(app: FastAPI, web: Web) -> None:
         return response
 
 
+#: Runs shown per page. Small enough to scan, large enough that a month of
+#: weekly reconciliation fits on one.
+PAGE_SIZE: Final = 25
+
+
 def _register_runs(app: FastAPI, web: Web) -> None:
     @app.get("/runs", response_class=HTMLResponse, include_in_schema=False)
-    def runs(request: Request) -> Response:
+    def runs(request: Request, page: int = 1, status: str = "", sort: str = "") -> Response:
         if not web.is_signed_in(request):
             return redirect("/login")
+
+        # Both are validated by the store against fixed sets rather than
+        # interpolated, so a crafted query string cannot reach the SQL.
+        wanted = status if status in STATUSES else None
+        column = sort if sort in SORTABLE else "created_at"
+        total = web.ctx.store.count(status=wanted)
+        pages = max(1, -(-total // PAGE_SIZE))
+        current = min(max(1, page), pages)
+
         return web.render(
             request,
             "runs.html",
-            {"runs": web.ctx.store.list_runs(limit=25), "total": web.ctx.store.count()},
+            {
+                "runs": web.ctx.store.list_runs(
+                    limit=PAGE_SIZE,
+                    offset=(current - 1) * PAGE_SIZE,
+                    status=wanted,
+                    sort=column,
+                ),
+                "total": total,
+                "page": current,
+                "pages": pages,
+                "status": wanted or "",
+                "sort": column,
+                "all_statuses": sorted(STATUSES),
+            },
         )
 
 

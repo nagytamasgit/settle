@@ -163,6 +163,19 @@ def _register_results(app: FastAPI, web: Web) -> None:
     def _guard(request: Request) -> Response | None:
         return None if web.is_signed_in(request) else redirect("/login")
 
+    @app.get("/runs/{run_id}/mapping-summary", include_in_schema=False)
+    def mapping_summary(request: Request, run_id: str) -> Response:
+        """What was confirmed for this run, for when a result looks wrong."""
+        if (blocked := _guard(request)) is not None:
+            return blocked
+        if web.ctx.store.get(run_id) is None:
+            return web.render(request, "missing.html", status_code=404)
+        return web.render(
+            request,
+            "mapping_summary.html",
+            {"run_id": run_id, "entries": web.ctx.store.mapping(run_id)},
+        )
+
     @app.get("/runs/{run_id}", response_class=HTMLResponse, include_in_schema=False)
     def show_run(request: Request, run_id: str) -> Response:
         if (blocked := _guard(request)) is not None:

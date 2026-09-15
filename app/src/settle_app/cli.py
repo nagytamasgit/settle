@@ -79,6 +79,32 @@ def backup(
 
 
 @app.command()
+def purge(data_dir: Annotated[Path | None, typer.Option("--data-dir")] = None) -> None:
+    """Delete runs past their retention window, and abandoned uploads.
+
+    The app also does this at startup. This command exists for deployments that
+    stay up for months, where "at startup" is not often enough.
+    """
+    from settle_app.artifacts import ArtifactStore
+    from settle_app.maintenance import sweep
+
+    settings = _settings(data_dir=data_dir)
+    result = sweep(
+        store=RunStore(settings.database_path),
+        artifacts=ArtifactStore(settings.runs_dir),
+        settings=settings,
+    )
+    if settings.retention_days is None:
+        typer.secho(
+            "no retention window is set, so nothing expires; "
+            "set SETTLE_WEB_RETENTION_DAYS if runs should not be kept forever",
+            fg=typer.colors.YELLOW,
+            err=True,
+        )
+    typer.echo(f"deleted {result.expired} expired and {result.abandoned} abandoned run(s)")
+
+
+@app.command()
 def version() -> None:
     """Print the app version."""
     typer.echo(APP_VERSION)

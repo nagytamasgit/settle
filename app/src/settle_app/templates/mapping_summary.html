@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Columns used &middot; settle{% endblock %}
+
+{% block content %}
+<h1>Columns used</h1>
+<p class="lede">What was confirmed before this run, and where each guess came from.</p>
+
+{% if not entries %}
+<div class="empty"><p>No mapping was recorded for this run.</p></div>
+{% else %}
+<table>
+  <thead>
+    <tr><th>File</th><th>settle field</th><th>Your column</th><th>Matched by</th></tr>
+  </thead>
+  <tbody>
+    {% for kind, target, source, origin in entries %}
+    <tr>
+      <td>{{ kind }}</td>
+      <td><code>{{ target }}</code></td>
+      <td>{{ source }}</td>
+      <td><span class="tag {{ origin }}">{{ origin }}</span></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<p><a href="/runs/{{ run_id }}">&larr; Back to the run</a></p>
+{% endblock %}

@@ -49,6 +49,13 @@
 {% endfor %}
 {% endif %}
 
+{% if mapping %}
+<p class="muted fineprint">
+  Read from your columns &mdash;
+  <a href="/runs/{{ run.id }}/mapping-summary">see which went where</a>.
+</p>
+{% endif %}
+
 {% if files %}
 <h2>Download</h2>
 <p class="downloads">

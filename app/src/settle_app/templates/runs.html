@@ -4,13 +4,24 @@
 {% block content %}
 <h1>Runs</h1>
 
-{% if not runs %}
+{% if not runs and not status %}
 <div class="empty">
   <p>Nothing here yet.</p>
   <p><a class="button" href="/runs/new">Reconcile a statement</a></p>
 </div>
 {% else %}
-<p class="muted">{{ total }} run{{ '' if total == 1 else 's' }}.</p>
+
+<p class="filters">
+  <a href="/runs" class="{% if not status %}current{% endif %}">All</a>
+  {% for name in all_statuses %}
+  <a href="/runs?status={{ name }}" class="{% if status == name %}current{% endif %}">{{ name }}</a>
+  {% endfor %}
+  <span class="muted">{{ total }} run{{ '' if total == 1 else 's' }}</span>
+</p>
+
+{% if not runs %}
+<div class="empty"><p>No {{ status }} runs.</p></div>
+{% else %}
 <table>
   <thead>
     <tr>
@@ -28,12 +39,25 @@
       <td><a href="/runs/{{ run.id }}">{{ run.created_at[:16].replace('T', ' ') }}</a></td>
       <td>{{ run.label }}</td>
       <td><span class="pill {{ run.status }}">{{ run.status }}</span></td>
-      <td class="num">{{ run.payment_count }}</td>
-      <td class="num">{{ run.money_in }}</td>
+      <td class="num">{{ run.payment_count or '' }}</td>
+      <td class="num">{{ run.money_in if run.is_complete else '' }}</td>
       <td class="num">{{ run.review_count or '' }}</td>
     </tr>
     {% endfor %}
   </tbody>
 </table>
+
+{% if pages > 1 %}
+<p class="pager">
+  {% if page > 1 %}
+  <a href="/runs?page={{ page - 1 }}{% if status %}&status={{ status }}{% endif %}">&larr; Newer</a>
+  {% endif %}
+  <span class="muted">Page {{ page }} of {{ pages }}</span>
+  {% if page < pages %}
+  <a href="/runs?page={{ page + 1 }}{% if status %}&status={{ status }}{% endif %}">Older &rarr;</a>
+  {% endif %}
+</p>
+{% endif %}
+{% endif %}
 {% endif %}
 {% endblock %}
