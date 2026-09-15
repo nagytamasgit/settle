@@ -1,0 +1,33 @@
+# Caddy obtains and renews a Let's Encrypt certificate automatically, given a
+# real domain whose A/AAAA record already points at this box and ports 80 and
+# 443 open. Both have to be true before the first start or ACME fails.
+
+{$SETTLE_DOMAIN} {
+	encode zstd gzip
+
+	# The app enforces its own upload cap, but doing it at the edge means an
+	# oversized file is cut off here rather than streamed all the way in.
+	request_body {
+		max_size 16MB
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+
+	reverse_proxy settle:8000 {
+		header_up X-Forwarded-For {remote_host}
+		# Reconciliation runs synchronously inside the request. The app caps
+		# rows to keep that bounded, but a large statement on a small box can
+		# still take a while, and the default 30s would cut it off mid-run.
+		transport http {
+			read_timeout 120s
+			write_timeout 120s
+		}
+	}
+
+	log {
+		output stdout
+	}
+}

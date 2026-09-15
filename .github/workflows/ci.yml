@@ -95,7 +95,44 @@ jobs:
           tags: settle:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      - name: the image runs
+      - name: the engine image runs
         run: |
           docker run --rm settle:ci version
           docker run --rm settle:ci --help
+
+      - name: build the app image
+        uses: docker/build-push-action@v6
+        with:
+          # The repository root: settle-app depends on settle-engine by path,
+          # so both trees have to be in the build context.
+          context: .
+          file: app/Dockerfile
+          push: false
+          load: true
+          tags: settle-app:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: the app image runs and carries its templates
+        run: |
+          docker run --rm settle-app:ci version
+          docker run --rm --entrypoint python settle-app:ci -c \
+            "import pathlib, settle_app; d = pathlib.Path(settle_app.__file__).parent; \
+             assert (d / 'templates' / 'run.html').is_file(); \
+             assert (d / 'static' / 'app.css').is_file(); \
+             assert (d / 'samples' / 'invoices.csv').is_file(); \
+             print('package data present')"
+
+      - name: the app serves
+        run: |
+          docker run -d --name probe -p 8000:8000 \
+            -e SETTLE_WEB_PASSWORD=a-long-enough-ci-password settle-app:ci
+          for _ in $(seq 30); do
+            curl -fsS http://127.0.0.1:8000/healthz && break || sleep 1
+          done
+          curl -fsS http://127.0.0.1:8000/healthz
+          docker rm -f probe
+
+      - name: the compose file is valid
+        # Catches a typo here rather than on the box, mid-deploy.
+        run: SETTLE_DOMAIN=example.invalid docker compose -f app/docker-compose.yml config -q

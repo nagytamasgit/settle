@@ -1,0 +1,71 @@
+# The whole deployment. Two containers: the app, and Caddy in front of it
+# handling TLS.
+#
+#   cd app
+#   mkdir -p secrets && openssl rand -base64 24 > secrets/settle_password
+#   chmod 600 secrets/settle_password
+#   echo "SETTLE_DOMAIN=settle.example.com" > .env
+#   docker compose up -d
+#
+# Full instructions, including what this stores and for how long, are in
+# ../docs/DEPLOY.md.
+
+services:
+  settle:
+    build:
+      # The repository root, because settle-app depends on settle-engine by
+      # path and both trees must be in the build context.
+      context: ..
+      dockerfile: app/Dockerfile
+    image: settle-app:0.1.0
+    restart: unless-stopped
+
+    environment:
+      SETTLE_WEB_DATA_DIR: /data
+      SETTLE_WEB_PASSWORD_FILE: /run/secrets/settle_password
+      # Caddy terminates TLS and sets the forwarded header, so the app can
+      # trust it for rate limiting and mark its cookie Secure.
+      SETTLE_WEB_BEHIND_PROXY: "1"
+      SETTLE_WEB_HTTPS: "1"
+      # Off by default. Turning it on sends column headers to Anthropic; see
+      # the data-protection section of ../docs/DEPLOY.md before you do.
+      SETTLE_WEB_MODEL_MAPPER: "0"
+      # Unset means keep runs forever, which is a decision rather than a
+      # default. Set it to a number of days if you would rather not.
+      # SETTLE_WEB_RETENTION_DAYS: "365"
+
+    secrets:
+      - settle_password
+
+    volumes:
+      - settle-data:/data
+
+    # Deliberately no `ports:`. Only Caddy is reachable from outside the host,
+    # so there is no way to hit the app over plain HTTP by accident.
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SETTLE_DOMAIN: ${SETTLE_DOMAIN:?set SETTLE_DOMAIN in app/.env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      settle:
+        condition: service_healthy
+
+secrets:
+  settle_password:
+    file: ./secrets/settle_password
+
+volumes:
+  settle-data:
+  # Holds the ACME account key and the issued certificates. If this is not
+  # persistent, every restart re-issues and Let's Encrypt rate limits bite.
+  caddy-data:
+  caddy-config:

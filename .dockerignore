@@ -1,0 +1,50 @@
+# The build context currently ships .git, .venv and every cache. It should not.
+#
+# README.md, LICENSE and COMMERCIAL.md are deliberately NOT ignored: the
+# Dockerfiles copy them, and PolyForm requires the terms to travel with every
+# copy of the software, which an image someone pulls certainly is.
+
+.git
+.github
+.gitignore
+
+.venv
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.coverage
+coverage.xml
+htmlcov/
+
+# Test and benchmark trees are not needed at runtime. bench/ is excluded from
+# the engine image on purpose: the committed results are part of the repo's
+# argument, not part of what the container does.
+tests/
+app/tests/
+bench/
+
+# Scratch output and local state.
+demo/
+out/
+data/
+*.db
+*.sqlite3
+secrets/
+.env
+
+# Deployment descriptors describe the image; they do not belong inside it.
+docker-compose.yml
+app/docker-compose.yml
+app/Caddyfile
+Makefile
+
+.DS_Store
+.idea/
+.vscode/
