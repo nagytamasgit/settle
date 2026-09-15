@@ -2,6 +2,8 @@
 
 A payment-to-invoice reconciliation engine. Deterministic at its core, model-assisted only at the messy edge, and it tells you when it isn't sure.
 
+*Here for the finance problem rather than the code? [What settle does, in plain English](docs/PLAIN-ENGLISH.md).*
+
 > **Reconciliation is a logic problem with a messy edge.**
 >
 > Matching payments to invoices is deterministic: amounts, dates, customers and references are facts, and a payment either explains a set of invoices to the cent or it does not. settle solves that part with search and rules, and proves the invariants with property-based tests.
@@ -164,12 +166,12 @@ src/settle/
 └── cli.py       Typer, a thin wrapper
 bench/           generator, benchmark, chart, committed results
 tests/           unit · property (Hypothesis) · integration
-docs/            DECISIONS · EVAL · ARCHITECTURE
+docs/            PLAIN-ENGLISH · DECISIONS · EVAL · ARCHITECTURE
 ```
 
 `domain/` imports nothing from the layers around it. That's the concrete meaning of "the model tier could be deleted and the matcher wouldn't notice" — the `ReferenceParser` port is declared in the domain, and the adapters live outside it.
 
-Read [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the matching pass and the confidence weight table, [`docs/DECISIONS.md`](docs/DECISIONS.md) for every omission and its reason, [`docs/EVAL.md`](docs/EVAL.md) for what the benchmark does and doesn't support.
+Read [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the matching pass and the confidence weight table, [`docs/DECISIONS.md`](docs/DECISIONS.md) for every omission and its reason, [`docs/EVAL.md`](docs/EVAL.md) for what the benchmark does and doesn't support, and [`docs/PLAIN-ENGLISH.md`](docs/PLAIN-ENGLISH.md) for the version with no code in it.
 
 ---
 
