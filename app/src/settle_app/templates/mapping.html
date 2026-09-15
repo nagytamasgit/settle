@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Check the columns &middot; settle{% endblock %}
+
+{% block content %}
+<h1>Check the columns</h1>
+<p class="lede">
+  Your files don&rsquo;t have to use settle&rsquo;s column names. Confirm what
+  goes where, and nothing runs until you do.
+</p>
+
+{% if model_used %}
+<p class="notice">
+  A model suggested at least one of these, marked <span class="tag model">model</span>.
+  It only proposes &mdash; it never sees your amounts or customer names, and
+  nothing happens until you confirm below.
+</p>
+{% endif %}
+
+<form method="post" action="/runs/{{ run_id }}/mapping">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+  {% for title, prefix, proposal in sections %}
+  <h2>{{ title }}</h2>
+  {% if not proposal.headers %}
+  <p class="notice error">That file has no header row, so there is nothing to map.</p>
+  {% else %}
+  <table>
+    <thead>
+      <tr>
+        <th>settle needs</th>
+        <th>Your column</th>
+        <th>Matched by</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for choice in proposal.choices %}
+      <tr>
+        <td>
+          <code>{{ choice.target }}</code>
+          {% if proposal.is_required(choice.target) %}
+          <span class="tag required">required</span>
+          {% endif %}
+        </td>
+        <td>
+          <select name="{{ prefix }}.{{ choice.target }}">
+            <option value="">&mdash; not in my file &mdash;</option>
+            {% for header in proposal.headers %}
+            <option value="{{ header }}" {% if header == choice.source %}selected{% endif %}>
+              {{ header }}
+            </option>
+            {% endfor %}
+          </select>
+        </td>
+        <td>
+          {% if choice.source %}
+          <span class="tag {{ choice.origin.value }}">{{ choice.origin.value }}</span>
+          {% else %}
+          <span class="muted">&mdash;</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+  {% endfor %}
+
+  <p class="fineprint muted">
+    Columns marked <span class="tag required">required</span> must be filled in.
+    Anything else is optional &mdash; leaving it unset just means the engine has
+    one less signal to work with.
+  </p>
+
+  <button type="submit">Looks right, reconcile</button>
+</form>
+{% endblock %}

@@ -36,7 +36,9 @@ ALLOCATIONS_CSV: Final = "allocations.csv"
 REVIEW_QUEUE_CSV: Final = "review_queue.csv"
 INVOICE_STATES_CSV: Final = "invoice_states.csv"
 
-#: Offered to the user, in the order the results page lists them.
+#: Offered to the user, in the order the results page lists them. The originals
+#: are included: when a mapping looks wrong, the first thing anyone wants is the
+#: file they actually uploaded, next to the one the engine actually read.
 DOWNLOADABLE: Final = (
     ALLOCATIONS_CSV,
     REVIEW_QUEUE_CSV,
@@ -44,6 +46,8 @@ DOWNLOADABLE: Final = (
     RESULT_JSON,
     CANONICAL_INVOICES,
     CANONICAL_PAYMENTS,
+    UPLOAD_INVOICES,
+    UPLOAD_PAYMENTS,
 )
 
 #: Everything that may exist in a run directory.
@@ -56,6 +60,8 @@ HUMAN_NAMES: Final = {
     RESULT_JSON: "Full result (JSON)",
     CANONICAL_INVOICES: "Invoices, as read",
     CANONICAL_PAYMENTS: "Bank lines, as read",
+    UPLOAD_INVOICES: "Invoices, as uploaded",
+    UPLOAD_PAYMENTS: "Bank lines, as uploaded",
 }
 
 

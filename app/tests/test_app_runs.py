@@ -51,17 +51,17 @@ def client(settings: WebSettings) -> Iterator[TestClient]:
         yield client
 
 
-def _csrf(client: TestClient) -> str:
-    page = client.get("/runs/new").text
+def _csrf(client: TestClient, path: str = "/runs/new") -> str:
+    page = client.get(path).text
     marker = 'name="csrf_token" value="'
     start = page.index(marker) + len(marker)
     return page[start : page.index('"', start)]
 
 
-def _upload(
+def _start(
     client: TestClient, invoices: str = INVOICES, payments: str = PAYMENTS, **extra: str
 ) -> str:
-    """Post a run and return the created run id."""
+    """Post the files and return the run id, stopping at the mapping screen."""
     response = client.post(
         "/runs",
         data={"csrf_token": _csrf(client), **extra},
@@ -71,7 +71,23 @@ def _upload(
         },
     )
     assert response.status_code == 303, response.text
-    return response.headers["location"].rsplit("/", 1)[-1]
+    return response.headers["location"].split("/")[2]
+
+
+def _confirm(client: TestClient, run_id: str, **overrides: str) -> None:
+    """Accept the proposed mapping, which is what a user does on that screen."""
+    path = f"/runs/{run_id}/mapping"
+    response = client.post(path, data={"csrf_token": _csrf(client, path), **overrides})
+    assert response.status_code == 303, response.text
+
+
+def _upload(
+    client: TestClient, invoices: str = INVOICES, payments: str = PAYMENTS, **extra: str
+) -> str:
+    """The whole flow: files in, mapping confirmed, reconciled."""
+    run_id = _start(client, invoices, payments, **extra)
+    _confirm(client, run_id)
+    return run_id
 
 
 class TestTheHappyPath:
@@ -101,8 +117,14 @@ class TestTheHappyPath:
         """The 'just looking' path has to work, or nobody gets past the form."""
         response = client.post("/runs", data={"csrf_token": _csrf(client), "use_sample": "1"})
         assert response.status_code == 303
-        run_id = response.headers["location"].rsplit("/", 1)[-1]
+        run_id = response.headers["location"].split("/")[2]
+        _confirm(client, run_id)
         assert "Allocations" in client.get(f"/runs/{run_id}").text
+
+    def test_even_the_sample_goes_through_the_mapping_screen(self, client: TestClient) -> None:
+        """No path skips confirmation, including the one we control entirely."""
+        response = client.post("/runs", data={"csrf_token": _csrf(client), "use_sample": "1"})
+        assert response.headers["location"].endswith("/mapping")
 
 
 class TestEquivalence:
@@ -157,14 +179,9 @@ class TestRejections:
     def test_a_broken_row_names_the_line(self, client: TestClient) -> None:
         """The engine's error message is worth more than a generic one."""
         broken = PAYMENTS.replace("300.00", "not-a-number")
-        response = client.post(
-            "/runs",
-            data={"csrf_token": _csrf(client)},
-            files={
-                "invoices": ("invoices.csv", INVOICES, "text/csv"),
-                "payments": ("bank.csv", broken, "text/csv"),
-            },
-        )
+        run_id = _start(client, payments=broken)
+        path = f"/runs/{run_id}/mapping"
+        response = client.post(path, data={"csrf_token": _csrf(client, path)})
         assert response.status_code == 422
         assert "bank.csv:2" in response.text
 
@@ -186,14 +203,9 @@ class TestRejections:
         settings = WebSettings(data_dir=tmp_path, password=PASSWORD, max_rows=2)
         with TestClient(create_app(settings), follow_redirects=False) as client:
             client.post("/login", data={"password": PASSWORD})
-            response = client.post(
-                "/runs",
-                data={"csrf_token": _csrf(client)},
-                files={
-                    "invoices": ("invoices.csv", INVOICES, "text/csv"),
-                    "payments": ("bank.csv", PAYMENTS, "text/csv"),
-                },
-            )
+            run_id = _start(client)
+            path = f"/runs/{run_id}/mapping"
+            response = client.post(path, data={"csrf_token": _csrf(client, path)})
             assert response.status_code == 422
             assert "settle run" in response.text
 
@@ -228,7 +240,7 @@ class TestCsrf:
 class TestDownloadsAreLockedDown:
     @pytest.mark.parametrize(
         "name",
-        ["secret.key", "../secret.key", "../../etc/passwd", "settle.db", "upload-invoices.csv"],
+        ["secret.key", "../secret.key", "../../etc/passwd", "settle.db", "../../settle.db"],
     )
     def test_only_whitelisted_files_are_served(self, client: TestClient, name: str) -> None:
         run_id = _upload(client)
@@ -301,15 +313,10 @@ class TestUnsafeResults:
         def explode(**_: object) -> None:
             raise InvariantViolation("allocations exceed payments by 0.01")
 
+        run_id = _start(client)
         monkeypatch.setattr(runs_routes, "execute", explode)
-        response = client.post(
-            "/runs",
-            data={"csrf_token": _csrf(client)},
-            files={
-                "invoices": ("invoices.csv", INVOICES, "text/csv"),
-                "payments": ("bank.csv", PAYMENTS, "text/csv"),
-            },
-        )
+        path = f"/runs/{run_id}/mapping"
+        response = client.post(path, data={"csrf_token": _csrf(client, path)})
         assert response.status_code == 500
         assert "discarded" in response.text
 
@@ -323,15 +330,10 @@ class TestUnsafeResults:
         def explode(**_: object) -> None:
             raise InvariantViolation("boom")
 
+        run_id = _start(client)
         monkeypatch.setattr(runs_routes, "execute", explode)
-        client.post(
-            "/runs",
-            data={"csrf_token": _csrf(client)},
-            files={
-                "invoices": ("invoices.csv", INVOICES, "text/csv"),
-                "payments": ("bank.csv", PAYMENTS, "text/csv"),
-            },
-        )
+        path = f"/runs/{run_id}/mapping"
+        client.post(path, data={"csrf_token": _csrf(client, path)})
         rows = RunStore(settings.database_path).list_runs()
         assert [row.status for row in rows] == [STATUS_FAILED]
 
