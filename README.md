@@ -4,6 +4,8 @@ A payment-to-invoice reconciliation engine. Deterministic at its core, model-ass
 
 *Here for the finance problem rather than the code? [What settle does, in plain English](docs/PLAIN-ENGLISH.md).*
 
+*Want it in a browser rather than a terminal? That's [`settle-app`](app/README.md).*
+
 > **Reconciliation is a logic problem with a messy edge.**
 >
 > Matching payments to invoices is deterministic: amounts, dates, customers and references are facts, and a payment either explains a set of invoices to the cent or it does not. settle solves that part with search and rules, and proves the invariants with property-based tests.
@@ -155,6 +157,30 @@ Confidence is `Decimal` too — not for precision, but so that "these two candid
 
 ---
 
+## Two products
+
+This repository holds two distributions. They are separate on purpose: an
+expert wants a library, a finance team wants a browser, and shipping FastAPI and
+SQLite to the first to satisfy the second serves neither.
+
+| | **`settle-engine`** (this) | **[`settle-app`](app/README.md)** |
+|---|---|---|
+| For | Integrators, library users, the command line | Everyday use in a browser |
+| Ships | Engine, CLI, `POST /reconcile`, CSV and JSON | Web UI, run history, column mapping, deployment |
+| Has | No UI, no database, no state | All three, by design |
+| Install | `pip install settle-engine` | `cd app && docker compose up` |
+
+The engine does not know the app exists — it gains no dependency, no `settle
+web` command, and no import. `app/tests/test_app_separation.py` checks that
+rather than trusting it, which is what keeps "no database, no web UI" below true
+as written rather than aspirational.
+
+The app handles what the engine deliberately won't: accepting a Xero or
+QuickBooks export whose columns are named something else, keeping a history of
+runs, and putting a password in front of both.
+
+---
+
 ## Layout
 
 ```
@@ -166,7 +192,8 @@ src/settle/
 └── cli.py       Typer, a thin wrapper
 bench/           generator, benchmark, chart, committed results
 tests/           unit · property (Hypothesis) · integration
-docs/            PLAIN-ENGLISH · DECISIONS · EVAL · ARCHITECTURE
+docs/            PLAIN-ENGLISH · DECISIONS · EVAL · ARCHITECTURE · DEPLOY
+app/             the browser interface: a separate distribution
 ```
 
 `domain/` imports nothing from the layers around it. That's the concrete meaning of "the model tier could be deleted and the matcher wouldn't notice" — the `ReferenceParser` port is declared in the domain, and the adapters live outside it.

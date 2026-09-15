@@ -47,6 +47,36 @@ The dependency arrow points inward everywhere. `domain/` imports nothing from
 `parse/`, `io/`, or `api/` — which is the concrete meaning of "you could delete
 the model tier and the matcher would not notice".
 
+### The app, one layer further out
+
+`settle-app` in [`app/`](../app/) is a fourth adapter beside `api/` and
+`cli.py`, but in a separate distribution:
+
+```
+app/src/settle_app/   depends on: settle (the whole public surface)
+├── settings.py       config, and the startup refusals
+├── security.py       passwords, sessions, CSRF, throttling
+├── store.py          sqlite3: run history
+├── artifacts.py      the files a run produced
+├── mapping.py        your column names -> settle's
+├── mapper_model.py   the optional model tier for the residue
+├── views.py          result files -> display rows
+├── runner.py         the one place reconcile() is called
+├── app.py            FastAPI, routes
+└── cli.py            settle-app serve | backup | purge
+```
+
+The arrow points one way only: nothing under `src/settle/` imports anything
+under `app/`, and `app/tests/test_app_separation.py` checks it. That is what
+makes the engine installable on its own with no web stack at all.
+
+The request path is `upload → mapping.to_canonical → csv_io.read_* →
+reconcile() → csv_io.write_all → views.build_views → HTML`. Note where the
+mapping sits: it normalises the file *before* the engine's readers, so the
+engine has no branch for "came from the web app". And note that `views` reads
+the written files rather than the in-memory result — the results page is a view
+of the artefacts, which is what keeps screen and download identical.
+
 ### Why the port lives in `domain/`, not `parse/`
 
 `ReferenceParser` is a Protocol in `domain/ports.py`. The domain declares what

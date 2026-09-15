@@ -150,3 +150,25 @@ Two honest statements belong in EVAL.md: that the generator's noise is a model o
 **Minimum shippable version if time runs out:** M1 to M4 plus M6 and a reduced M7 (benchmark without the model tier). That is already a complete, defensible engine.
 
 **Where the risk sits:** M3 and M7. Bounded search that stays deterministic under adversarial input, and a benchmark whose numbers survive contact with a re-run.
+
+---
+
+## Addendum, 15 September 2026: a browser interface
+
+Everything above is the brief as it stood, including section 4 listing a
+database and a web UI as out of scope. It is left as written rather than edited
+to agree with the present, because a design brief that quietly updates itself is
+worth nothing as a record.
+
+What changed: the engine could not reach the people who actually do
+reconciliation, all of whom were being asked to use a terminal. So the
+repository now holds a **second distribution**, `settle-app`, in `app/` — a
+server-rendered browser interface with run history, column mapping for real
+accounting exports, and a deployment story for a VPS.
+
+The scope decisions above survive intact rather than being reversed, because the
+app is a separate package that the engine neither depends on nor knows about.
+`pip install settle-engine` still gets an engine with no database, no UI and no
+web dependencies, and a test enforces it. The reasoning for the opposite choices
+on the other side of that line is recorded in
+[`app/docs/DECISIONS.md`](app/docs/DECISIONS.md).

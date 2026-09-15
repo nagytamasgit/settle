@@ -82,15 +82,37 @@ Which points at something you can act on without buying anything: getting
 customers to put a usable reference on their payments will do more for you than
 any clever matching software, this one included.
 
+## Using it without a terminal
+
+There is a browser version, [`settle-app`](../app/README.md). You sign in, pick
+your two files, check that it has worked out which column is which, and get the
+same answers on a screen instead of in a folder. It keeps a history, so last
+month's reconciliation is still there when someone asks about it.
+
+Everything on those screens is a view of the same files described above, and
+every table has a download link next to it. Nothing is calculated differently
+for the web — it is the same engine, and there is a test whose only job is to
+prove the file it hands you is identical to the one the command line would have
+written.
+
+Your files also don't have to use settle's column names. It reads the headers,
+works out that your `Invoice Number` is its `number`, and shows you what it
+concluded before anything runs. If it guesses wrong, you change it on that
+screen.
+
 ## What it isn't
 
-settle is an engine, not a finished product. It doesn't plug into your bank,
-there's no website to log into, and it keeps nothing once the run is over. Two
-files in, answers out. No credentials to hand anyone, and no data leaving
-wherever you choose to run it.
+settle is an engine, not a finished product. It doesn't plug into your bank and
+it doesn't read your accounting system directly. Two files in, answers out. No
+credentials to hand anyone, and no data leaving wherever you choose to run it.
 
 Connecting it to your own systems is a separate piece of work. It was left out
 deliberately, not forgotten.
+
+One thing worth knowing if you run the browser version: unlike the command-line
+one, it does keep what you upload, so that the history works. Who can read it
+and for how long are both your decisions, and
+[the deployment guide](DEPLOY.md) spells out what those decisions are.
 
 ## What it costs
 

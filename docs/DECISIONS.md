@@ -24,11 +24,27 @@ allocation once it exists, are decisions about *their* system, not this one.
 Keeping state out is also what makes the determinism property testable at all —
 there is no hidden state for a second run to disagree with.
 
+The browser app in [`app/`](../app/) does keep run history, in SQLite. That
+changes nothing here: it is a separate distribution, `settle-engine` does not
+depend on it and cannot import it, and no stored row is ever read back into
+`reconcile()`. The app is a caller, and persistence is exactly where this entry
+always said it belonged. Its reasoning is in
+[`app/docs/DECISIONS.md`](../app/docs/DECISIONS.md).
+
 ### No web UI
 
 The review queue is data, not a screen. It ships as JSON and CSV so it can go
 into whatever the finance team already uses. A React app here would be the
 largest and least interesting part of the repository.
+
+There *is* a browser interface, in [`app/`](../app/), and it does not contradict
+any of that. It is a second distribution, so `pip install settle-engine` still
+gets you an engine with no FastAPI, no templates and no database. The review
+queue is still data: every screen renders the files the engine wrote, every
+table has a download link to the exact file `settle run` produces, and a test
+asserts the served `result.json` is byte-identical to it. And the objection to a
+React app was accepted rather than overruled — the app is server-rendered
+templates with no JavaScript and no build step.
 
 ### No multi-currency conversion
 
