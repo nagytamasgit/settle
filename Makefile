@@ -8,9 +8,10 @@ help: ## Show this help
 		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
 
 .PHONY: install
-install: ## Create the venv and install everything, including dev extras
+install: ## Create the venv and install both distributions, with dev extras
 	$(UV) venv --python 3.12
 	$(UV) pip install -e ".[dev,api,bench,model]"
+	$(UV) pip install -e "./app[dev,model]"
 
 .PHONY: test
 test: ## Run the test suite
@@ -22,18 +23,18 @@ test-thorough: ## Run the suite with the deep Hypothesis profile (what CI runs)
 
 .PHONY: cov
 cov: ## Run tests with coverage and enforce the threshold
-	$(PY) -m pytest --cov=settle --cov-report=term-missing --cov-fail-under=90
+	$(PY) -m pytest --cov=settle --cov=settle_app --cov-report=term-missing --cov-fail-under=90
 
 .PHONY: lint
 lint: ## ruff + mypy strict
-	$(PY) -m ruff check src tests bench
-	$(PY) -m ruff format --check src tests bench
+	$(PY) -m ruff check src tests bench app
+	$(PY) -m ruff format --check src tests bench app
 	$(PY) -m mypy
 
 .PHONY: fmt
 fmt: ## Apply formatting and safe fixes
-	$(PY) -m ruff check --fix src tests bench
-	$(PY) -m ruff format src tests bench
+	$(PY) -m ruff check --fix src tests bench app
+	$(PY) -m ruff format src tests bench app
 
 .PHONY: bench
 bench: ## Regenerate the benchmark table and chart in bench/results/

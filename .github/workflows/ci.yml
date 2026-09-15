@@ -27,10 +27,11 @@ jobs:
           enable-cache: true
       - run: uv venv --python 3.12
       - run: uv pip install -e ".[dev,api,bench,model]"
+      - run: uv pip install -e "./app[dev,model]"
       - name: ruff check
-        run: .venv/bin/ruff check src tests bench
+        run: .venv/bin/ruff check src tests bench app
       - name: ruff format
-        run: .venv/bin/ruff format --check src tests bench
+        run: .venv/bin/ruff format --check src tests bench app
       - name: mypy strict
         run: .venv/bin/mypy
 
@@ -48,11 +49,13 @@ jobs:
           enable-cache: true
       - run: uv venv --python ${{ matrix.python-version }}
       - run: uv pip install -e ".[dev,api,bench,model]"
+      - run: uv pip install -e "./app[dev,model]"
       - name: pytest with the deep Hypothesis profile
         run: >
           .venv/bin/pytest
           --hypothesis-profile=thorough
           --cov=settle
+          --cov=settle_app
           --cov-report=term-missing
           --cov-report=xml
           --cov-fail-under=90

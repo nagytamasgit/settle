@@ -44,7 +44,7 @@ packages = ["src/settle"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-src = ["src", "tests", "bench"]
+src = ["src", "tests", "bench", "app/src", "app/tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM", "RUF", "ANN", "PL"]
@@ -61,24 +61,29 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["settle", "tests", "bench"]
+known-first-party = ["settle", "settle_app", "tests", "bench"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["ANN", "PLR2004", "PLR0915", "S101"]
+"app/tests/**" = ["ANN", "PLR2004", "PLR0915", "S101"]
 "bench/**" = ["PLR2004"]
 
 [tool.mypy]
 python_version = "3.12"
 strict = true
 warn_unreachable = true
-files = ["src", "bench"]
+files = ["src", "bench", "app/src"]
+mypy_path = ["src", "app/src"]
 
 [[tool.mypy.overrides]]
 module = ["matplotlib.*", "anthropic.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+# Both distributions are tested from the repository root in one run. App test
+# modules are named test_app_*.py because neither tests/ nor app/tests/ is a
+# package, so basenames have to stay unique across the two trees.
+testpaths = ["tests", "app/tests"]
 # `tests.conftest` and `bench.*` are imported by name, and neither is an
 # installed package. `python -m pytest` would put the root on sys.path; the
 # `pytest` console script would not. Setting it here makes both work.
@@ -90,7 +95,7 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["src/settle"]
+source = ["src/settle", "app/src/settle_app"]
 branch = true
 
 [tool.coverage.report]
