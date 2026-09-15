@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # The model tier is never exercised in CI. It is an optional adapter behind an
+  # interface, and its contract is covered by tests with a fake client, so CI
+  # needs no API key and no network.
+  SETTLE_CI: "1"
+
+jobs:
+  lint:
+    name: ruff + mypy strict
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv venv --python 3.12
+      - run: uv pip install -e ".[dev,api,bench,model]"
+      - name: ruff check
+        run: .venv/bin/ruff check src tests bench
+      - name: ruff format
+        run: .venv/bin/ruff format --check src tests bench
+      - name: mypy strict
+        run: .venv/bin/mypy
+
+  test:
+    name: pytest (${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv venv --python ${{ matrix.python-version }}
+      - run: uv pip install -e ".[dev,api,bench,model]"
+      - name: pytest with the deep Hypothesis profile
+        run: >
+          .venv/bin/pytest
+          --hypothesis-profile=thorough
+          --cov=settle
+          --cov-report=term-missing
+          --cov-report=xml
+          --cov-fail-under=90
+      - uses: actions/upload-artifact@v4
+        if: matrix.python-version == '3.12'
+        with:
+          name: coverage
+          path: coverage.xml
+
+  benchmark:
+    name: benchmark smoke run
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv venv --python 3.12
+      - run: uv pip install -e ".[dev,api,bench]"
+      - name: committed results must reproduce
+        # The numbers in the README are generated, not typed. If a change moves
+        # them, the commit has to move them too. The full benchmark runs in
+        # about ten seconds, so there is no reason to check a reduced version.
+        run: .venv/bin/python -m bench.check
+
+  docker:
+    name: docker build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: settle:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: the image runs
+        run: |
+          docker run --rm settle:ci version
+          docker run --rm settle:ci --help

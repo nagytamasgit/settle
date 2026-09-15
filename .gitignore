@@ -1,0 +1,24 @@
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.coverage
+coverage.xml
+htmlcov/
+
+# Scratch output from `make demo` and ad-hoc CLI runs. Benchmark results under
+# bench/results/ are deliberately committed - they are the numbers in the README.
+demo/
+out/
+
+.env
+.DS_Store
+.idea/
+.vscode/

@@ -1,0 +1,102 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "settle-engine"
+version = "0.1.0"
+description = "A payment-to-invoice reconciliation engine: deterministic at the core, model-assisted only at the messy edge."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "PolyForm-Noncommercial-1.0.0" }
+authors = [{ name = "Tamas Nagy", email = "nagytmas@gmail.com" }]
+keywords = ["reconciliation", "invoice", "payments", "finance", "matching"]
+
+dependencies = [
+    "pydantic>=2.7",
+    "typer>=0.12",
+    "rapidfuzz>=3.9",
+    "structlog>=24.1",
+]
+
+[project.optional-dependencies]
+api = ["fastapi>=0.111", "uvicorn>=0.30"]
+model = ["anthropic>=0.34"]
+bench = ["matplotlib>=3.8"]
+dev = [
+    "pytest>=8.2",
+    "pytest-cov>=5.0",
+    "hypothesis>=6.100",
+    "mypy>=1.10",
+    "ruff>=0.5",
+    "httpx>=0.27",
+]
+
+[project.scripts]
+settle = "settle.cli:app"
+
+[project.urls]
+Repository = "https://github.com/nagytamasgit/settle"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/settle"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests", "bench"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM", "RUF", "ANN", "PL"]
+ignore = [
+    "ANN401",
+    # Internal helpers in the matcher take a lot of named evidence flags. The
+    # signatures are keyword-only where it aids the reader; arity alone is not
+    # the problem these rules think it is.
+    "PLR0913",
+    "PLR0917",
+    # Optional extras (anthropic, uvicorn) and one import-cycle break are
+    # imported inside functions on purpose, so the package works without them.
+    "PLC0415",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["settle", "tests", "bench"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["ANN", "PLR2004", "PLR0915", "S101"]
+"bench/**" = ["PLR2004"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+files = ["src", "bench"]
+
+[[tool.mypy.overrides]]
+module = ["matplotlib.*", "anthropic.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# `tests.conftest` and `bench.*` are imported by name, and neither is an
+# installed package. `python -m pytest` would put the root on sys.path; the
+# `pytest` console script would not. Setting it here makes both work.
+pythonpath = ["."]
+addopts = "-q --strict-markers"
+markers = [
+    "slow: benchmark-scale tests",
+    "model: requires a live model backend",
+]
+
+[tool.coverage.run]
+source = ["src/settle"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "@overload",
+]
