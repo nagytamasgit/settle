@@ -168,7 +168,13 @@ SQLite to the first to satisfy the second serves neither.
 | For | Integrators, library users, the command line | Everyday use in a browser |
 | Ships | Engine, CLI, `POST /reconcile`, CSV and JSON | Web UI, run history, column mapping, deployment |
 | Has | No UI, no database, no state | All three, by design |
-| Install | `pip install settle-engine` | `cd app && docker compose up` |
+| Install | `pip install git+https://github.com/nagytamasgit/settle.git` | `cd app && docker compose up` |
+
+The engine installs from the repository rather than from PyPI: the distribution
+is named `settle-engine` and builds a normal wheel, but it is not published to
+an index yet, and an install line that 404s is worse than a longer one that
+works. Released versions, with the built wheel and sdist attached, are on the
+[releases page](https://github.com/nagytamasgit/settle/releases).
 
 The engine does not know the app exists — it gains no dependency, no `settle
 web` command, and no import. `app/tests/test_app_separation.py` checks that

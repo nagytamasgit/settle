@@ -4,8 +4,8 @@ From a bare Ubuntu or Debian box to a working instance with HTTPS. Budget half
 an hour, most of it waiting for DNS.
 
 This deploys the **app** (`settle-app`), not the engine. The engine is a library
-and a CLI and does not need deploying — `pip install settle-engine` and you have
-it.
+and a CLI and does not need deploying —
+`pip install git+https://github.com/nagytamasgit/settle.git` and you have it.
 
 ---
 

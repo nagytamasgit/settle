@@ -38,7 +38,7 @@ into whatever the finance team already uses. A React app here would be the
 largest and least interesting part of the repository.
 
 There *is* a browser interface, in [`app/`](../app/), and it does not contradict
-any of that. It is a second distribution, so `pip install settle-engine` still
+any of that. It is a second distribution, so installing `settle-engine` still
 gets you an engine with no FastAPI, no templates and no database. The review
 queue is still data: every screen renders the files the engine wrote, every
 table has a download link to the exact file `settle run` produces, and a test

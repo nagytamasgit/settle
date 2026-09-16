@@ -16,7 +16,7 @@ deliberately, in a package the engine cannot see.
 
 Nothing under `settle/` imports anything under `settle_app/`, and
 `app/tests/test_app_separation.py` checks it rather than trusting it. That is
-what lets `pip install settle-engine` still deliver a pure engine with no
+what lets installing `settle-engine` still deliver a pure engine with no
 FastAPI, no SQLite and no templates.
 
 There is deliberately no `settle web` command. Adding one would make the engine

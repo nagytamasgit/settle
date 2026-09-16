@@ -13,7 +13,7 @@ This is the second of two products in this repository:
 | For | Integrators, library users, the command line | Everyday use in a browser |
 | Ships | Engine, CLI, `POST /reconcile` | Web UI, run history, column mapping |
 | Has | No UI, no database, no state | All three, by design |
-| Install | `pip install settle-engine` | `docker compose up` |
+| Install | `pip install git+https://github.com/nagytamasgit/settle.git` | `docker compose up` |
 
 The engine has no idea this exists. It is a dependency here, never a sibling —
 `tests/test_app_separation.py` checks that rather than trusting it.
