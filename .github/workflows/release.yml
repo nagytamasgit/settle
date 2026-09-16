@@ -1,0 +1,143 @@
+name: Release
+
+# Tags are the trigger. Pushing v1.2.3 builds the engine's distributions,
+# checks they are what the tag claims, and publishes a GitHub release with the
+# wheel and the sdist attached.
+#
+# workflow_dispatch is here because a tag can exist before this workflow does,
+# which is exactly what happened to v0.1.0: the tag was pushed by hand and the
+# release never got cut. Being able to release an already-pushed tag after the
+# fact is worth the extra input.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "An existing tag to release, e.g. v0.1.0"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build and verify the distributions
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.resolve.outputs.tag }}
+      version: ${{ steps.resolve.outputs.version }}
+    steps:
+      - name: work out which tag is being released
+        id: resolve
+        run: |
+          TAG="${{ inputs.tag || github.ref_name }}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.resolve.outputs.tag }}
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: the tag and the packaged versions must agree
+        # A tag that disagrees with pyproject.toml publishes a release whose
+        # assets are named after a different version than the release itself.
+        # Both distributions are checked, because they are released together
+        # and drifting apart silently is the failure worth preventing.
+        run: |
+          ENGINE=$(python3 -c "import tomllib;print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          APP=$(python3 -c "import tomllib;print(tomllib.load(open('app/pyproject.toml','rb'))['project']['version'])")
+          echo "tag=${{ steps.resolve.outputs.version }} engine=$ENGINE app=$APP"
+          test "$ENGINE" = "${{ steps.resolve.outputs.version }}"
+          test "$APP" = "${{ steps.resolve.outputs.version }}"
+
+      - name: build the sdist and the wheel
+        run: uv build --out-dir dist .
+
+      - name: the wheel installs clean, runs, and stays pure
+        # app/tests/test_app_separation.py asserts the engine carries no web
+        # stack, but it asserts it about the source tree. This asserts it about
+        # the artifact someone actually installs, which is the one that can be
+        # wrong without anybody noticing — a stray dependency in pyproject.toml
+        # would pass the test and still ship FastAPI to a library user.
+        run: |
+          uv venv /tmp/probe
+          uv pip install --python /tmp/probe/bin/python dist/*.whl
+          test "$(/tmp/probe/bin/settle version)" = "${{ steps.resolve.outputs.version }}"
+          if uv pip list --python /tmp/probe/bin/python \
+              | grep -iE 'fastapi|jinja2|starlette|sqlalchemy|python-multipart'; then
+            echo "::error::web dependencies leaked into the engine wheel" && exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: distributions
+          path: dist/
+
+  github-release:
+    name: publish the GitHub release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.build.outputs.tag }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: distributions
+          path: dist
+
+      - name: create the release, or refresh its assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.build.outputs.tag }}
+        # Re-running the workflow on a tag that already has a release replaces
+        # the assets rather than failing, so a botched run can be fixed by
+        # pressing the button again.
+        run: |
+          if [ -f "docs/releases/$TAG.md" ]; then
+            NOTES=(--notes-file "docs/releases/$TAG.md")
+          else
+            NOTES=(--generate-notes)
+          fi
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/* --clobber
+          else
+            gh release create "$TAG" --verify-tag \
+              --title "settle ${TAG#v}" "${NOTES[@]}" dist/*
+          fi
+
+  pypi:
+    name: publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    # Inert by default, and skipped rather than failed when it is off.
+    #
+    # `settle-engine` is not published to any index. Claiming a name on PyPI is
+    # close to permanent, so that is a decision for a person, not something a
+    # tag push should do on their behalf. To turn it on: register a trusted
+    # publisher for this repository and this workflow on PyPI, then set the
+    # repository variable PUBLISH_TO_PYPI to "true". No API token is needed and
+    # none should be added — trusted publishing uses the OIDC token below.
+    #
+    # When this goes live, the install lines in README.md, app/README.md and
+    # docs/DEPLOY.md should go back to `pip install settle-engine`, and the
+    # paragraph under the "Two products" table explaining the git URL should go.
+    if: vars.PUBLISH_TO_PYPI == 'true'
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: distributions
+          path: dist
+
+      - uses: pypa/gh-action-pypi-publish@release/v1
